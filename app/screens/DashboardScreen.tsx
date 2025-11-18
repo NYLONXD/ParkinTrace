@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-  Alert, Animated, Dimensions, StatusBar, Platform 
+  Animated, Dimensions, StatusBar, Platform 
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, Href } from 'expo-router';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../config/firebase';
+import CustomAlert from '../../components/common/CustomAlert';
 
-const { width, height } = Dimensions.get('window');
+
+const { width } = Dimensions.get('window');
 const isSmallDevice = width < 375;
 
 type VitalData = {
@@ -20,6 +22,17 @@ type VitalData = {
   fallDetected: boolean;
   steps: number;
   calories: number;
+};
+
+type AlertConfig = {
+  visible: boolean;
+  type: 'success' | 'error' | 'warning' | 'info' | 'confirm';
+  title: string;
+  message: string;
+  onConfirm?: () => void;
+  onCancel?: () => void;
+  confirmText?: string;
+  cancelText?: string;
 };
 
 export default function DashboardScreen() {
@@ -34,8 +47,16 @@ export default function DashboardScreen() {
     steps: 2847,
     calories: 345,
   });
+  
   const [fallAlertVisible, setFallAlertVisible] = useState(false);
   const [timer, setTimer] = useState(10);
+  const [alert, setAlert] = useState<AlertConfig>({
+    visible: false,
+    type: 'info',
+    title: '',
+    message: '',
+  });
+  
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -92,45 +113,126 @@ export default function DashboardScreen() {
     ).start();
   };
 
+  const showAlert = (config: Omit<AlertConfig, 'visible'>) => {
+    setAlert({ ...config, visible: true });
+  };
+
+  const hideAlert = () => {
+    setAlert(prev => ({ ...prev, visible: false }));
+  };
+
   const handleImOK = () => {
     setFallAlertVisible(false);
     setVitals(prev => ({ ...prev, fallDetected: false, fallStatus: 'Safe' }));
     pulseAnim.stopAnimation();
     pulseAnim.setValue(1);
-    Alert.alert('✓ Confirmed', 'Fall alert dismissed');
+    showAlert({
+      type: 'success',
+      title: 'Confirmed',
+      message: 'Fall alert dismissed. Stay safe!',
+      onConfirm: hideAlert,
+      confirmText: 'Got it',
+    });
   };
 
   const triggerSOS = () => {
     setFallAlertVisible(false);
     pulseAnim.stopAnimation();
     pulseAnim.setValue(1);
-    Alert.alert(
-      '🚨 SOS TRIGGERED',
-      'Emergency services notified!\nCaregivers contacted!',
-      [{ text: 'OK', onPress: () => setVitals(prev => ({ ...prev, fallDetected: false, fallStatus: 'Safe' })) }]
-    );
+    showAlert({
+      type: 'error',
+      title: 'SOS TRIGGERED',
+      message: 'Emergency services notified!\nCaregivers have been contacted.',
+      onConfirm: () => {
+        setVitals(prev => ({ ...prev, fallDetected: false, fallStatus: 'Safe' }));
+        hideAlert();
+      },
+      confirmText: 'Understood',
+    });
+  };
+
+  const handleManualSOS = () => {
+    showAlert({
+      type: 'confirm',
+      title: 'Emergency SOS',
+      message: 'This will immediately contact emergency services and your caregivers. Continue?',
+      onConfirm: () => {
+        hideAlert();
+        setTimeout(() => {
+          showAlert({
+            type: 'success',
+            title: 'Help is on the way!',
+            message: 'Emergency services have been notified.\nETA: 8-10 minutes',
+            onConfirm: hideAlert,
+            confirmText: 'OK',
+          });
+        }, 300);
+      },
+      onCancel: hideAlert,
+      confirmText: 'Send SOS',
+      cancelText: 'Cancel',
+    });
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut(auth);
-              router.replace('/screens/LoginScreen');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to logout');
-            }
-          },
-        },
-      ]
-    );
+    showAlert({
+      type: 'warning',
+      title: 'Logout',
+      message: 'Are you sure you want to logout?',
+      onConfirm: async () => {
+        hideAlert();
+        try {
+          await signOut(auth);
+          router.replace('/screens/auth/LoginScreen');
+        } catch (error) {
+          showAlert({
+            type: 'error',
+            title: 'Error',
+            message: 'Failed to logout. Please try again.',
+            onConfirm: hideAlert,
+          });
+        }
+      },
+      onCancel: hideAlert,
+      confirmText: 'Logout',
+      cancelText: 'Cancel',
+    });
+  };
+
+  const handleCallDoctor = () => {
+    showAlert({
+      type: 'info',
+      title: 'Calling Doctor',
+      message: 'Connecting you to Dr. Sarah Smith...\n📞 +1 (555) 123-4567',
+      onConfirm: () => {
+        hideAlert();
+        setTimeout(() => {
+          showAlert({
+            type: 'success',
+            title: 'Call Connected',
+            message: 'You are now connected with Dr. Smith',
+            onConfirm: hideAlert,
+          });
+        }, 300);
+      },
+      confirmText: 'End Call',
+    });
+  };
+
+  const handleMedication = () => {
+    router.push('screens/medication/MedicationScreen' as Href);
+  };
+
+  const handleReports = () => {
+    router.push('/screens/reports/ReportScreen' as Href);
+  };
+
+  const handleExercise = () => {
+    router.push('/screens/exercise/ExerciseScreen' as Href);
+  };
+
+  const handleAppointments = () => {
+    router.push('/screens/doctor/AppointmentsScreen' as Href);
   };
 
   const navigateToDetails = (title: string, value: string | number, unit?: string) => {
@@ -319,28 +421,40 @@ export default function DashboardScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
             <View style={styles.actionGrid}>
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#10B98120' }]}>
+              <TouchableOpacity 
+                style={[styles.actionBtn, { backgroundColor: '#10B98120' }]}
+                onPress={handleMedication}
+              >
                 <View style={[styles.actionCircle, { backgroundColor: '#10B981' }]}>
                   <Text style={styles.actionEmoji}>💊</Text>
                 </View>
                 <Text style={styles.actionText}>Medication</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#3B82F620' }]}>
+              <TouchableOpacity 
+                style={[styles.actionBtn, { backgroundColor: '#3B82F620' }]}
+                onPress={handleReports}
+              >
                 <View style={[styles.actionCircle, { backgroundColor: '#3B82F6' }]}>
                   <Text style={styles.actionEmoji}>📊</Text>
                 </View>
                 <Text style={styles.actionText}>Reports</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#8B5CF620' }]}>
+              <TouchableOpacity 
+                style={[styles.actionBtn, { backgroundColor: '#8B5CF620' }]}
+                onPress={handleExercise}
+              >
                 <View style={[styles.actionCircle, { backgroundColor: '#8B5CF6' }]}>
                   <Text style={styles.actionEmoji}>🏋️</Text>
                 </View>
                 <Text style={styles.actionText}>Exercise</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#EC489920' }]}>
+              <TouchableOpacity 
+                style={[styles.actionBtn, { backgroundColor: '#EC489920' }]}
+                onPress={handleAppointments}
+              >
                 <View style={[styles.actionCircle, { backgroundColor: '#EC4899' }]}>
                   <Text style={styles.actionEmoji}>📅</Text>
                 </View>
@@ -351,10 +465,7 @@ export default function DashboardScreen() {
 
           {/* Emergency Buttons */}
           <View style={styles.emergencySection}>
-            <TouchableOpacity 
-              style={styles.doctorBtn}
-              onPress={() => Alert.alert('📞 Calling', 'Connecting to Dr. Smith...')}
-            >
+            <TouchableOpacity style={styles.doctorBtn} onPress={handleCallDoctor}>
               <LinearGradient colors={['#10B981', '#059669']} style={styles.buttonGradient}>
                 <View style={styles.emergencyContent}>
                   <View style={styles.emergencyCircle}>
@@ -365,10 +476,7 @@ export default function DashboardScreen() {
               </LinearGradient>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.sosBtn}
-              onPress={triggerSOS}
-            >
+            <TouchableOpacity style={styles.sosBtn} onPress={handleManualSOS}>
               <LinearGradient colors={['#EF4444', '#DC2626']} style={styles.buttonGradient}>
                 <View style={styles.emergencyContent}>
                   <View style={styles.emergencyCircle}>
@@ -381,10 +489,23 @@ export default function DashboardScreen() {
           </View>
         </ScrollView>
       </LinearGradient>
+
+      {/* Custom Alert Modal */}
+      <CustomAlert
+        visible={alert.visible}
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        onConfirm={alert.onConfirm}
+        onCancel={alert.onCancel}
+        confirmText={alert.confirmText}
+        cancelText={alert.cancelText}
+      />
     </View>
   );
 }
 
+// Keep existing styles...
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0F172A' },
   gradient: { flex: 1 },

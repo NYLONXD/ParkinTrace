@@ -1,3 +1,5 @@
+// D:\Professional_life\CA_Projects\react_native\ParkinTrace\app\screens\DetailsScreen.tsx
+
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';

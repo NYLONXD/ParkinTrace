@@ -3,12 +3,11 @@ import { useEffect } from 'react';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 
-// Keep splash screen visible while loading
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    // Add any custom fonts here if needed
+    // Add custom fonts here if needed
   });
 
   useEffect(() => {
@@ -24,8 +23,14 @@ export default function RootLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
+      <Stack.Screen name="screens/auth/LoginScreen" />
+      <Stack.Screen name="screens/auth/SignupScreen" />
       <Stack.Screen name="screens/DashboardScreen" />
       <Stack.Screen name="screens/DetailsScreen" />
+      <Stack.Screen name="screens/medication/MedicationScreen" />
+      <Stack.Screen name="screens/reports/ReportsScreen" />
+      <Stack.Screen name="screens/exercise/ExerciseScreen" />
+      <Stack.Screen name="screens/doctor/AppointmentsScreen" />
     </Stack>
   );
 }
