@@ -1,14 +1,13 @@
-// D:\Professional_life\CA_Projects\react_native\ParkinTrace\app\screens\DetailsScreen.tsx
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Details'>;
-
-export default function DetailsScreen({ navigation, route }: Props) {
-  const { title, value, unit } = route.params;
+export default function DetailsScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  
+  const { title, value, unit } = params;
 
   return (
     <View style={styles.container}>
@@ -25,7 +24,7 @@ export default function DetailsScreen({ navigation, route }: Props) {
             {title === 'Tremor Status' && 'Monitoring tremor intensity'}
             {title === 'Fall Status' && 'Real-time fall detection active'}
           </Text>
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Text style={styles.backBtnText}>← Back to Dashboard</Text>
           </TouchableOpacity>
         </View>
