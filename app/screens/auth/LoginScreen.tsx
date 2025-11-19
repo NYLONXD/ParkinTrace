@@ -63,6 +63,8 @@ export default function LoginScreen() {
     }
   };
 
+  // Sign-up handled on the dedicated Signup screen
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />

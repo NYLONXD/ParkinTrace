@@ -14,6 +14,13 @@ const isSmallDevice = width < 375;
 
 export default function SignupScreen() {
   const router = useRouter();
+  const handleGoBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/screens/DashboardScreen' as any);
+    }
+  };
   
   // Form States
   const [fullName, setFullName] = useState('');
@@ -203,7 +210,7 @@ export default function SignupScreen() {
               {/* Header */}
               <View style={styles.header}>
                 <TouchableOpacity 
-                  onPress={() => router.back()} 
+                  onPress={handleGoBack} 
                   style={styles.backButton}
                 >
                   <Text style={styles.backIcon}>←</Text>
@@ -224,7 +231,7 @@ export default function SignupScreen() {
                     </View>
                     <TextInput
                       style={styles.input}
-                      placeholder="John Doe"
+                      placeholder="Name"
                       placeholderTextColor="#64748B"
                       value={fullName}
                       onChangeText={setFullName}
@@ -242,7 +249,7 @@ export default function SignupScreen() {
                     </View>
                     <TextInput
                       style={styles.input}
-                      placeholder="john.doe@example.com"
+                      placeholder="Email Address"
                       placeholderTextColor="#64748B"
                       value={email}
                       onChangeText={setEmail}
@@ -262,7 +269,7 @@ export default function SignupScreen() {
                     </View>
                     <TextInput
                       style={styles.input}
-                      placeholder="+1 234 567 8900"
+                      placeholder="Number"
                       placeholderTextColor="#64748B"
                       value={phone}
                       onChangeText={setPhone}
@@ -281,7 +288,7 @@ export default function SignupScreen() {
                       </View>
                       <TextInput
                         style={styles.input}
-                        placeholder="25"
+                        placeholder="Age"
                         placeholderTextColor="#64748B"
                         value={age}
                         onChangeText={setAge}
@@ -444,7 +451,7 @@ export default function SignupScreen() {
                 {/* Login Link */}
                 <View style={styles.loginContainer}>
                   <Text style={styles.loginQuestion}>Already have an account?</Text>
-                  <TouchableOpacity onPress={() => router.back()}>
+                  <TouchableOpacity onPress={handleGoBack}>
                     <Text style={styles.loginButton}>Login</Text>
                   </TouchableOpacity>
                 </View>

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-  StatusBar, Platform, Dimensions 
+  StatusBar, Platform, Dimensions, Modal, TextInput 
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import CustomAlert from '../../../components/common/CustomAlert';
 
 const { width } = Dimensions.get('window');
 
@@ -22,7 +23,14 @@ type Appointment = {
 
 export default function AppointmentsScreen() {
   const router = useRouter();
-  const [appointments] = useState<Appointment[]>([
+  const handleGoBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/screens/DashboardScreen' as any);
+    }
+  };
+  const [appointments, setAppointments] = useState<Appointment[]>([
     { 
       id: '1', 
       doctorName: 'Dr. Sarah Smith', 
@@ -58,6 +66,19 @@ export default function AppointmentsScreen() {
     },
   ]);
 
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [newDate, setNewDate] = useState('');
+  const [newTime, setNewTime] = useState('');
+  
+  const [alert, setAlert] = useState({
+    visible: false,
+    type: 'success' as 'success' | 'error' | 'warning' | 'info' | 'confirm',
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
   const upcomingAppointments = appointments.filter(a => a.status === 'upcoming');
   const nextAppointment = upcomingAppointments[0];
 
@@ -79,6 +100,56 @@ export default function AppointmentsScreen() {
     }
   };
 
+  const handleReschedule = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setNewDate(appointment.date);
+    setNewTime(appointment.time);
+    setShowRescheduleModal(true);
+  };
+
+  const confirmReschedule = () => {
+    if (!newDate || !newTime) {
+      setAlert({
+        visible: true,
+        type: 'error',
+        title: 'Missing Information',
+        message: 'Please enter both date and time',
+        onConfirm: () => setAlert(prev => ({ ...prev, visible: false })),
+      });
+      return;
+    }
+
+    setAppointments(appointments.map(apt => 
+      apt.id === selectedAppointment?.id 
+        ? { ...apt, date: newDate, time: newTime }
+        : apt
+    ));
+
+    setShowRescheduleModal(false);
+    setAlert({
+      visible: true,
+      type: 'success',
+      title: 'Rescheduled',
+      message: `Appointment rescheduled to ${newDate} at ${newTime}`,
+      onConfirm: () => setAlert(prev => ({ ...prev, visible: false })),
+    });
+  };
+
+  const handleCancelAppointment = (id: string) => {
+    setAlert({
+      visible: true,
+      type: 'confirm',
+      title: 'Cancel Appointment',
+      message: 'Are you sure you want to cancel this appointment?',
+      onConfirm: () => {
+        setAppointments(appointments.map(apt => 
+          apt.id === id ? { ...apt, status: 'cancelled' as const } : apt
+        ));
+        setAlert(prev => ({ ...prev, visible: false }));
+      },
+    });
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1E293B" />
@@ -86,7 +157,7 @@ export default function AppointmentsScreen() {
         
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={handleGoBack} style={styles.backBtn}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Appointments</Text>
@@ -125,7 +196,10 @@ export default function AppointmentsScreen() {
                   <TouchableOpacity style={styles.nextActionBtn}>
                     <Text style={styles.nextActionText}>Join Call</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.nextActionBtn, styles.nextActionBtnSecondary]}>
+                  <TouchableOpacity 
+                    style={[styles.nextActionBtn, styles.nextActionBtnSecondary]}
+                    onPress={() => handleReschedule(nextAppointment)}
+                  >
                     <Text style={[styles.nextActionText, styles.nextActionTextSecondary]}>
                       Reschedule
                     </Text>
@@ -151,13 +225,13 @@ export default function AppointmentsScreen() {
           {/* Appointments List */}
           <Text style={styles.sectionTitle}>All Appointments</Text>
           {appointments.map((appointment) => (
-            <TouchableOpacity 
+            <View 
               key={appointment.id}
               style={[
                 styles.appointmentCard,
-                appointment.status === 'completed' && styles.appointmentCardCompleted
+                appointment.status === 'completed' && styles.appointmentCardCompleted,
+                appointment.status === 'cancelled' && styles.appointmentCardCancelled
               ]}
-              activeOpacity={0.7}
             >
               <View style={[styles.appointmentIcon, { backgroundColor: appointment.color + '20' }]}>
                 <Text style={styles.appointmentEmoji}>{appointment.icon}</Text>
@@ -183,11 +257,22 @@ export default function AppointmentsScreen() {
               </View>
 
               {appointment.status === 'upcoming' && (
-                <TouchableOpacity style={styles.moreBtn}>
-                  <Text style={styles.moreIcon}>⋮</Text>
-                </TouchableOpacity>
+                <View style={styles.appointmentActions}>
+                  <TouchableOpacity 
+                    style={styles.iconBtn}
+                    onPress={() => handleReschedule(appointment)}
+                  >
+                    <Text style={styles.iconBtnText}>🔄</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.iconBtn}
+                    onPress={() => handleCancelAppointment(appointment.id)}
+                  >
+                    <Text style={styles.iconBtnText}>❌</Text>
+                  </TouchableOpacity>
+                </View>
               )}
-            </TouchableOpacity>
+            </View>
           ))}
 
           {/* Info Card */}
@@ -199,6 +284,67 @@ export default function AppointmentsScreen() {
           </View>
         </ScrollView>
       </LinearGradient>
+
+      {/* Reschedule Modal */}
+      <Modal
+        visible={showRescheduleModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowRescheduleModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Reschedule Appointment</Text>
+            <Text style={styles.modalSubtitle}>{selectedAppointment?.doctorName}</Text>
+            
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalLabel}>New Date</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g., Dec 5, 2024"
+                placeholderTextColor="#64748B"
+                value={newDate}
+                onChangeText={setNewDate}
+              />
+            </View>
+
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalLabel}>New Time</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g., 02:00 PM"
+                placeholderTextColor="#64748B"
+                value={newTime}
+                onChangeText={setNewTime}
+              />
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={[styles.modalBtn, styles.modalBtnCancel]}
+                onPress={() => setShowRescheduleModal(false)}
+              >
+                <Text style={styles.modalBtnTextCancel}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.modalBtn} onPress={confirmReschedule}>
+                <LinearGradient colors={['#3B82F6', '#8B5CF6']} style={styles.modalBtnGradient}>
+                  <Text style={styles.modalBtnText}>Confirm</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <CustomAlert
+        visible={alert.visible}
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        onConfirm={alert.onConfirm}
+        onCancel={() => setAlert(prev => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 }
@@ -351,6 +497,10 @@ const styles = StyleSheet.create({
   appointmentCardCompleted: {
     opacity: 0.6,
   },
+  appointmentCardCancelled: {
+    opacity: 0.5,
+    borderColor: '#EF4444',
+  },
   appointmentIcon: {
     width: 50,
     height: 50,
@@ -382,7 +532,11 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   statusText: { fontSize: 11, fontWeight: '600' },
-  moreBtn: {
+  appointmentActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  iconBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -390,7 +544,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  moreIcon: { fontSize: 20, color: '#94A3B8' },
+  iconBtnText: { fontSize: 16 },
 
   infoCard: {
     backgroundColor: '#3B82F615',
@@ -402,4 +556,81 @@ const styles = StyleSheet.create({
   },
   infoTitle: { fontSize: 16, fontWeight: 'bold', color: '#F1F5F9', marginBottom: 8 },
   infoText: { fontSize: 13, color: '#94A3B8', lineHeight: 20 },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#1E293B',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#F1F5F9',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalInputGroup: {
+    marginBottom: 16,
+  },
+  modalLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#F1F5F9',
+    marginBottom: 8,
+  },
+  modalInput: {
+    backgroundColor: '#0F172A',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+    color: '#F1F5F9',
+    fontSize: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  modalBtn: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  modalBtnCancel: {
+    backgroundColor: '#334155',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 14,
+  },
+  modalBtnGradient: {
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  modalBtnText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  modalBtnTextCancel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#F1F5F9',
+  },
 });

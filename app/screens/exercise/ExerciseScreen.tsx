@@ -21,6 +21,13 @@ type Exercise = {
 
 export default function ExerciseScreen() {
   const router = useRouter();
+  const handleGoBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/screens/DashboardScreen' as any);
+    }
+  };
   const [exercises, setExercises] = useState<Exercise[]>([
     { 
       id: '1', 
@@ -96,7 +103,7 @@ export default function ExerciseScreen() {
         
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={handleGoBack} style={styles.backBtn}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Exercise</Text>

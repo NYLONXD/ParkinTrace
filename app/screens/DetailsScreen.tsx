@@ -8,6 +8,13 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 export default function DetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const handleGoBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/screens/DashboardScreen' as any);
+    }
+  };
   
   const { title, value, unit } = params;
 
@@ -26,7 +33,7 @@ export default function DetailsScreen() {
             {title === 'Tremor Status' && 'Monitoring tremor intensity'}
             {title === 'Fall Status' && 'Real-time fall detection active'}
           </Text>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.backBtn} onPress={handleGoBack}>
             <Text style={styles.backBtnText}>← Back to Dashboard</Text>
           </TouchableOpacity>
         </View>

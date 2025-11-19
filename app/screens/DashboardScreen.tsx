@@ -259,16 +259,23 @@ export default function DashboardScreen() {
       <StatusBar barStyle="light-content" backgroundColor="#1E293B" />
       <LinearGradient colors={['#1E293B', '#0F172A']} style={styles.gradient}>
         
-        {/* Header */}
-        <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
+        <Animated.View style={[styles.header, { opacity: fadeAnim }]}> 
           <View style={styles.headerTop}>
             <View>
               <Text style={styles.greeting}>Good Morning</Text>
               <Text style={styles.headerTitle}>Health Monitor</Text>
             </View>
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-              <Text style={styles.logoutIcon}>⎋</Text>
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              <TouchableOpacity 
+                onPress={() => router.push('/screens/profile/ProfileScreen' as Href)} 
+                style={styles.profileBtn}
+              >
+                <Text style={styles.profileIcon}>👤</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+                <Text style={styles.logoutIcon}>⎋</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </Animated.View>
 
@@ -743,4 +750,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold', 
     color: '#fff',
   },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  profileBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#1E293B',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  profileIcon: { fontSize: 20, color: '#60A5FA' },
 });

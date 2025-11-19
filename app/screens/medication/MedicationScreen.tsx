@@ -22,6 +22,13 @@ type Medication = {
 
 export default function MedicationScreen() {
   const router = useRouter();
+  const handleGoBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/screens/DashboardScreen' as any);
+    }
+  };
   const [medications, setMedications] = useState<Medication[]>([
     { id: '1', name: 'Levodopa', dosage: '100mg', time: '08:00 AM', taken: true, icon: '💊', color: '#3B82F6' },
     { id: '2', name: 'Carbidopa', dosage: '25mg', time: '08:00 AM', taken: true, icon: '💊', color: '#10B981' },
@@ -64,7 +71,7 @@ export default function MedicationScreen() {
         
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={handleGoBack} style={styles.backBtn}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Medication</Text>
